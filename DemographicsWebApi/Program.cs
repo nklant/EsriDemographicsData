@@ -23,7 +23,7 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Demographics API", Version = "v1" });
 });
 
-builder.Services.AddSingleton<IHostedService, DataFetchingService>();
+builder.Services.AddHostedService<DataFetchingService>();
 builder.Services.AddScoped<IDemographicDataService, DemographicDataService>();
 
 // Register the endpoint configuration
