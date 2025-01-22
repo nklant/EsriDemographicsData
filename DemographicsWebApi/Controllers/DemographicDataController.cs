@@ -1,11 +1,6 @@
-using System.Text;
-using DemographicsDb.Context;
-using DemographicsWebApi.Models;
+using DemographicsDb.Models;
+using DemographicsLib.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace DemographicsWebApi.Controllers;
 
@@ -13,52 +8,24 @@ namespace DemographicsWebApi.Controllers;
 [Route("api/[controller]")]
 public class DemographicDataController : ControllerBase
 {
-    private readonly DemographicDbContext Db;
-    private readonly IDistributedCache _memoryCache;
+    private readonly IDemographicDataService _service;
 
-    public DemographicDataController(DemographicDbContext db, IDistributedCache memoryCache)
+    public DemographicDataController(IDemographicDataService service)
     {
-        Db = db;
-        _memoryCache = memoryCache;
+        _service = service;
     }
 
-    /// <summary>
-    /// Get all or filter demographic data by stateName from cache if available, otherwise fetch from database
-    /// </summary>
-    /// <param name="stateName"></param>
-    /// <returns>DemographicsData</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DemographicsData>>> Get([FromQuery] string? stateName = null)
+    public async Task<ActionResult<IEnumerable<DemographicsData>>> GetDataAsync([FromQuery] string? stateName)
     {
-        byte[]? cachedData = await _memoryCache.GetAsync("DemographicsData").ConfigureAwait(false);
-
-        if (cachedData != null)
+        try
         {
-            string cacheString = Encoding.UTF8.GetString(cachedData);
-            var demographicDataCache = JsonSerializer.Deserialize<List<DemographicsData>>(cacheString);
-
-            if (stateName != null)
-            {
-                demographicDataCache = demographicDataCache?.Where(d => d.StateName == stateName).ToList();
-            }
-
-            return demographicDataCache ?? new List<DemographicsData>();
+            var data = await _service.GetDataAsync(stateName);
+            return Ok(data);
         }
-
-        var query = Db.DemographicsData.AsNoTracking();
-
-        if (stateName != null)
+        catch (Exception ex)
         {
-            query = query.Where(d => d.StateName == stateName);
+            return StatusCode(500, ex.Message);
         }
-
-        var data = await query.Select(d => new DemographicsData
-        {
-            Id = d.Id,
-            StateName = d.StateName,
-            Population = d.Population
-        }).ToListAsync();
-
-        return data;
     }
 }

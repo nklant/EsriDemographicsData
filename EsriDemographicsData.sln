@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemographicsDb", "Demograph
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemographicsBackgroundService", "DemographicsBackgroundService\DemographicsBackgroundService.csproj", "{18036896-C32F-48E2-8899-33DF48E35886}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemographicsLib", "DemographicsLib\DemographicsLib.csproj", "{18EDCB08-923A-4892-A3DF-CBF7D9F3CB26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{18036896-C32F-48E2-8899-33DF48E35886}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18036896-C32F-48E2-8899-33DF48E35886}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18036896-C32F-48E2-8899-33DF48E35886}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18EDCB08-923A-4892-A3DF-CBF7D9F3CB26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18EDCB08-923A-4892-A3DF-CBF7D9F3CB26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18EDCB08-923A-4892-A3DF-CBF7D9F3CB26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18EDCB08-923A-4892-A3DF-CBF7D9F3CB26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

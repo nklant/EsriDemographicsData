@@ -21,6 +21,7 @@
     <ItemGroup>
       <ProjectReference Include="..\DemographicsBackgroundService\DemographicsBackgroundService.csproj" />
       <ProjectReference Include="..\DemographicsDb\DemographicsDb.csproj" />
+      <ProjectReference Include="..\DemographicsLib\DemographicsLib.csproj" />
     </ItemGroup>
 
 </Project>

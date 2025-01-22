@@ -1,6 +1,8 @@
 using DemographicsBackgroundService.Models;
 using DemographicsBackgroundService.Services;
 using DemographicsDb.Context;
+using DemographicsLib.BL;
+using DemographicsLib.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -22,6 +24,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddSingleton<IHostedService, DataFetchingService>();
+builder.Services.AddScoped<IDemographicDataService, DemographicDataService>();
 
 // Register the endpoint configuration
 builder.Services.Configure<EndpointOptions>(builder.Configuration.GetSection("Endpoint"));
