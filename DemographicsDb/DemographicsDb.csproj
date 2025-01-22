@@ -21,4 +21,20 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="DemographicsDb\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="DemographicsDb\obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="DemographicsDb\obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="DemographicsDb\obj\**" />
+    </ItemGroup>
+
 </Project>
