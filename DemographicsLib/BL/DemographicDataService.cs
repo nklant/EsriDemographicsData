@@ -25,46 +25,43 @@ public class DemographicDataService : IDemographicDataService
     
     public async Task<IEnumerable<DemographicsData>> GetDataAsync(string? stateName)
     {
+        stateName = stateName?.ToLower();
+        
         byte[]? cachedData = await _memoryCache.GetAsync(_cacheSettings.CacheKey).ConfigureAwait(false);
+        
+        List<DemographicsData>? res;
 
-        // If data is cached, return it
-        if (cachedData != null)
+        // Check if data is cached first and if not, re-cache it from local DB
+        if (cachedData == null)
         {
-            string cacheString = Encoding.UTF8.GetString(cachedData);
-            List<DemographicsData>? demographicDataCache = JsonSerializer.Deserialize<List<DemographicsData>>(cacheString);
-
-            if (stateName != null)
+            res = await Db.DemographicsData.AsNoTracking()
+                             .Select(d => new DemographicsData
+                             {
+                                 Id = d.Id,
+                                 StateName = d.StateName,
+                                 Population = d.Population
+                             }).ToListAsync();
+            
+            string serializedData = JsonSerializer.Serialize(res);
+            byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
+            var cacheEntryOptions = new DistributedCacheEntryOptions
             {
-                demographicDataCache = demographicDataCache?.Where(d => d.StateName == stateName).ToList();
-            }
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
+            };
 
-            return demographicDataCache ?? new List<DemographicsData>();
+            await _memoryCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions).ConfigureAwait(false);
+        }
+        else
+        {
+            string serializedData = Encoding.UTF8.GetString(cachedData);
+            res = JsonSerializer.Deserialize<List<DemographicsData>>(serializedData);
         }
         
-        // Else fetch from local DB and re-cache
-        var query = Db.DemographicsData.AsNoTracking();
-
-        if (stateName != null)
+        if (!string.IsNullOrEmpty(stateName))
         {
-            query = query.Where(d => d.StateName == stateName);
+            res = res?.Where(d => d.StateName != null && d.StateName.ToLower().Contains(stateName)).ToList();
         }
         
-        var data = await query.Select(d => new DemographicsData
-        {
-            Id = d.Id,
-            StateName = d.StateName,
-            Population = d.Population
-        }).ToListAsync();
-        
-        string serializedData = JsonSerializer.Serialize(data);
-        byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
-        var cacheEntryOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
-        };
-        
-        await _memoryCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions).ConfigureAwait(false);
-        
-        return data;
+        return res ?? new();
     }
 }
