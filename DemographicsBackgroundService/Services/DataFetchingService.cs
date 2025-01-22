@@ -41,6 +41,7 @@ public class DataFetchingService : IHostedService, IDisposable
 
     private async void FetchDataAndCache(object? state)
     {
+        // So we can dispose the context when done
         using (var scope = _serviceProvider.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
