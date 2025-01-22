@@ -2,6 +2,7 @@ using DemographicsBackgroundService.Models;
 using DemographicsBackgroundService.Services;
 using DemographicsDb.Context;
 using DemographicsLib.BL;
+using DemographicsLib.Config;
 using DemographicsLib.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -27,6 +28,8 @@ builder.Services.AddScoped<IDemographicDataService, DemographicDataService>();
 
 // Register the endpoint configuration
 builder.Services.Configure<EndpointOptions>(builder.Configuration.GetSection("Endpoint"));
+// Register the cache settings
+builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("CacheSettings"));
 
 var app = builder.Build();
 

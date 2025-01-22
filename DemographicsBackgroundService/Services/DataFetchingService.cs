@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text;
 using DemographicsBackgroundService.Models;
 using DemographicsDb.Models;
+using DemographicsLib.Config;
 
 namespace DemographicsBackgroundService.Services;
 
@@ -18,18 +19,23 @@ public class DataFetchingService : IHostedService, IDisposable
     private readonly EndpointOptions _endpointOptions;
     private Timer? _timer;
     private readonly HttpClient _httpClient;
+    private readonly CacheSettings _cacheSettings;
 
-    public DataFetchingService(IServiceProvider serviceProvider, IDistributedCache distributedCache, IOptions<EndpointOptions> endpointOptions)
+    public DataFetchingService(IServiceProvider serviceProvider, 
+                               IDistributedCache distributedCache, 
+                               IOptions<EndpointOptions> endpointOptions,
+                               IOptions<CacheSettings> cacheSettings)
     {
         _serviceProvider = serviceProvider;
         _distributedCache = distributedCache;
         _endpointOptions = endpointOptions.Value;
         _httpClient = new HttpClient();
+        _cacheSettings = cacheSettings.Value;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+        _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
         return Task.CompletedTask;
     }
 
@@ -88,10 +94,10 @@ public class DataFetchingService : IHostedService, IDisposable
 
                 var cacheEntryOptions = new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
                 };
 
-                await _distributedCache.SetAsync("DemographicsData", dataToCache, cacheEntryOptions);
+                await _distributedCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions);
             }
         }
     }

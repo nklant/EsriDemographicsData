@@ -2,9 +2,11 @@ using System.Text;
 using System.Text.Json;
 using DemographicsDb.Context;
 using DemographicsDb.Models;
+using DemographicsLib.Config;
 using DemographicsLib.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace DemographicsLib.BL;
 
@@ -12,16 +14,18 @@ public class DemographicDataService : IDemographicDataService
 {
     private readonly DemographicDbContext Db;
     private readonly IDistributedCache _memoryCache;
+    private readonly CacheSettings _cacheSettings;
     
-    public DemographicDataService(DemographicDbContext db, IDistributedCache memoryCache)
+    public DemographicDataService(DemographicDbContext db, IDistributedCache memoryCache, IOptions<CacheSettings> cacheSettings)
     {
         Db = db;
         _memoryCache = memoryCache;
+        _cacheSettings = cacheSettings.Value;
     }
     
     public async Task<IEnumerable<DemographicsData>> GetDataAsync(string? stateName)
     {
-        byte[]? cachedData = await _memoryCache.GetAsync("DemographicsData").ConfigureAwait(false);
+        byte[]? cachedData = await _memoryCache.GetAsync(_cacheSettings.CacheKey).ConfigureAwait(false);
 
         // If data is cached, return it
         if (cachedData != null)
@@ -56,10 +60,10 @@ public class DemographicDataService : IDemographicDataService
         byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
         var cacheEntryOptions = new DistributedCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
         };
         
-        await _memoryCache.SetAsync("DemographicsData", dataToCache, cacheEntryOptions).ConfigureAwait(false);
+        await _memoryCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions).ConfigureAwait(false);
         
         return data;
     }
