@@ -45,7 +45,14 @@ public class DemographicDataService : IDemographicDataService
             query = query.Where(d => d.StateName == stateName);
         }
         
-        string serializedData = JsonSerializer.Serialize(query);
+        var data = await query.Select(d => new DemographicsData
+        {
+            Id = d.Id,
+            StateName = d.StateName,
+            Population = d.Population
+        }).ToListAsync();
+        
+        string serializedData = JsonSerializer.Serialize(data);
         byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
         var cacheEntryOptions = new DistributedCacheEntryOptions
         {
@@ -53,14 +60,7 @@ public class DemographicDataService : IDemographicDataService
         };
         
         await _memoryCache.SetAsync("DemographicsData", dataToCache, cacheEntryOptions).ConfigureAwait(false);
-
-        var data = await query.Select(d => new DemographicsData
-        {
-            Id = d.Id,
-            StateName = d.StateName,
-            Population = d.Population
-        }).ToListAsync();
-
+        
         return data;
     }
 }

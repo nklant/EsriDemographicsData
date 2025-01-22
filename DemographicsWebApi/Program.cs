@@ -14,7 +14,6 @@ builder.Services.AddDbContext<DemographicDbContext>(options => options.UseSqlSer
 builder.Services.AddControllers();
 
 // Configure in-memory cache
-builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddEndpointsApiExplorer();
