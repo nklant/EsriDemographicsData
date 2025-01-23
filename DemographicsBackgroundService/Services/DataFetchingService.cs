@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text;
+using System.Web;
 using DemographicsBackgroundService.Models;
 using DemographicsDb.Models;
 using DemographicsLib.Config;
@@ -20,20 +21,23 @@ public class DataFetchingService : IHostedService, IDisposable
     private Timer? _timer;
     private readonly HttpClient _httpClient;
     private readonly CacheSettings _cacheSettings;
+    private readonly QuerySettings _querySettings;
 
     public DataFetchingService(IServiceProvider serviceProvider, 
                                IDistributedCache distributedCache, 
                                IOptions<EndpointOptions> endpointOptions,
-                               IOptions<CacheSettings> cacheSettings)
+                               IOptions<CacheSettings> cacheSettings,
+                               IOptions<QuerySettings> querySettings)
     {
         _serviceProvider = serviceProvider;
         _distributedCache = distributedCache;
         _endpointOptions = endpointOptions.Value;
         _httpClient = new HttpClient();
         _cacheSettings = cacheSettings.Value;
+        _querySettings = querySettings.Value;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken ct)
     {
         _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
         return Task.CompletedTask;
@@ -41,29 +45,30 @@ public class DataFetchingService : IHostedService, IDisposable
 
     private async void FetchDataAndCache(object? state)
     {
-        // So we can dispose the context when done
         using (var scope = _serviceProvider.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
 
-            // Fetch data from the endpoint
-            var response = await _httpClient.GetStringAsync(new Uri(_endpointOptions.EndpointUri));
-            var jsonData = JsonDocument.Parse(response);
-
-            // Aggregate data by STATE_NAME
-            var fetchedData = jsonData.RootElement.GetProperty("features")
-                .EnumerateArray()
-                .GroupBy(feature => feature.GetProperty("attributes").GetProperty("STATE_NAME").GetString())
-                .Select(group => new DemographicsData
+            // Build the URI with query params
+            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri);
+            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+            query["where"] = _querySettings.Where;
+            query["outFields"] = _querySettings.OutFields;
+            query["f"] = _querySettings.F;
+            uriBuilder.Query = query.ToString();
+            
+            var response = await _httpClient.GetStringAsync(uriBuilder.Uri);
+            using var jsonData = JsonDocument.Parse(response); // because disposable
+            
+            // Aggregate by STATE_NAME
+            var data = JsonSerializer.Deserialize<FeatureCollection>(response);
+            var fetchedData = data?.Features?
+                .GroupBy(f => f.Attributes?.StateName)
+                .Select(g => new DemographicsData
                 {
-                    StateName = group.Key,
-                    Population = group.Sum(feature =>
-                    {
-                        var populationElement = feature.GetProperty("attributes").GetProperty("POPULATION");
-                        return populationElement.ValueKind == JsonValueKind.Null ? 0 : populationElement.GetInt32();
-                    })
-                })
-                .ToList();
+                    StateName = g.Key ?? "Unknown",
+                    Population = g.Sum(x => x.Attributes?.Population ?? 0)
+                }).ToList() ?? new List<DemographicsData>();
 
             // Compute hash of the fetched data
             string fetchedDataHash = ComputeHash(fetchedData);
@@ -113,7 +118,7 @@ public class DataFetchingService : IHostedService, IDisposable
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken ct)
     {
         _timer?.Change(Timeout.Infinite, 0);
         return Task.CompletedTask;

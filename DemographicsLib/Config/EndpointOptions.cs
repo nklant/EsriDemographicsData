@@ -1,4 +1,4 @@
-namespace DemographicsBackgroundService.Models;
+namespace DemographicsLib.Config;
 
 public class EndpointOptions
 {

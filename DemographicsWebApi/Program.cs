@@ -30,6 +30,8 @@ builder.Services.AddScoped<IDemographicDataService, DemographicDataService>();
 builder.Services.Configure<EndpointOptions>(builder.Configuration.GetSection("Endpoint"));
 // Register the cache settings
 builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("CacheSettings"));
+// Register the query settings
+builder.Services.Configure<QuerySettings>(builder.Configuration.GetSection("QuerySettings"));
 
 var app = builder.Build();
 
