@@ -55,10 +55,10 @@ public class DataFetchingService : IHostedService, IDisposable
                 Path = new Uri(_endpointOptions.EndpointUri).AbsolutePath.TrimEnd('/') + "/query" // Ensure no trailing slash
             };
             var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-            query["where"] = _querySettings.Where;
-            query["outFields"] = _querySettings.OutFields;
-            query["returnGeometry"] = _querySettings.ReturnGeometry;
-            query["f"] = _querySettings.F;
+            query["where"] = QuerySettings.Where;
+            query["outFields"] = QuerySettings.OutFields;
+            query["returnGeometry"] = QuerySettings.ReturnGeometry;
+            query["f"] = QuerySettings.F;
             uriBuilder.Query = query.ToString();
             
             var response = await _httpClient.GetStringAsync(uriBuilder.Uri);

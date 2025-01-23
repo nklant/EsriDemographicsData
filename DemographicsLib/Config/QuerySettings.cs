@@ -2,8 +2,8 @@ namespace DemographicsLib.Config;
 
 public class QuerySettings
 {
-    public string Where { get; set; } = null!;
-    public string OutFields { get; set; } = null!;
-    public string ReturnGeometry { get; set; } = null!;
-    public string F { get; set; } = null!;
+    public const string Where = "1=1";
+    public const string OutFields = "population, state_name";
+    public const string ReturnGeometry = "false";
+    public const string F = "pjson";
 }
