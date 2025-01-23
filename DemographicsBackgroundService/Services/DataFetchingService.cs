@@ -49,16 +49,20 @@ public class DataFetchingService : IHostedService, IDisposable
         {
             var context = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
 
-            // Build the URI with query params
-            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri);
+            // Build URI with query params
+            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri!)
+            {
+                Path = new Uri(_endpointOptions.EndpointUri).AbsolutePath.TrimEnd('/') + "/query" // Ensure no trailing slash
+            };
             var query = HttpUtility.ParseQueryString(uriBuilder.Query);
             query["where"] = _querySettings.Where;
             query["outFields"] = _querySettings.OutFields;
+            query["returnGeometry"] = _querySettings.ReturnGeometry;
             query["f"] = _querySettings.F;
             uriBuilder.Query = query.ToString();
             
             var response = await _httpClient.GetStringAsync(uriBuilder.Uri);
-            using var jsonData = JsonDocument.Parse(response); // because disposable
+            using var jsonData = JsonDocument.Parse(response); // Because disposable
             
             // Aggregate by STATE_NAME
             var data = JsonSerializer.Deserialize<FeatureCollection>(response);
