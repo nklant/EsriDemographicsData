@@ -19,5 +19,5 @@ public class Attributes
     [JsonPropertyName("STATE_NAME")]
     public string? StateName { get; set; }
     [JsonPropertyName("POPULATION")]
-    public long? Population { get; set; }
+    public int? Population { get; set; }
 }

@@ -4,5 +4,5 @@ public class DemographicsData
 {
     public int Id { get; set; }
     public string? StateName { get; set; }
-    public long? Population { get; set; }
+    public int? Population { get; set; }
 }
