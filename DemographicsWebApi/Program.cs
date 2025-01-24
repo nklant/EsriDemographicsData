@@ -1,4 +1,3 @@
-using DemographicsBackgroundService.Models;
 using DemographicsBackgroundService.Services;
 using DemographicsDb.Context;
 using DemographicsLib.BL;
@@ -32,6 +31,13 @@ builder.Services.Configure<EndpointOptions>(builder.Configuration.GetSection("En
 builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("CacheSettings"));
 
 var app = builder.Build();
+
+// Apply migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
+    db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {

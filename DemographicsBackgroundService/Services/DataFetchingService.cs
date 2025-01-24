@@ -77,6 +77,7 @@ public class DataFetchingService : IHostedService, IDisposable
             // Retrieve the stored hash from the database
             var storedHash = context.DataHash.FirstOrDefault()?.Hash;
 
+            // Check to see if there is a difference between the stored data and the fetched data
             if (storedHash != fetchedDataHash)
             {
                 using (var tran = await context.Database.BeginTransactionAsync())
