@@ -21,20 +21,17 @@ public class DataFetchingService : IHostedService, IDisposable
     private Timer? _timer;
     private readonly HttpClient _httpClient;
     private readonly CacheSettings _cacheSettings;
-    private readonly QuerySettings _querySettings;
 
     public DataFetchingService(IServiceProvider serviceProvider, 
                                IDistributedCache distributedCache, 
                                IOptions<EndpointOptions> endpointOptions,
-                               IOptions<CacheSettings> cacheSettings,
-                               IOptions<QuerySettings> querySettings)
+                               IOptions<CacheSettings> cacheSettings)
     {
         _serviceProvider = serviceProvider;
         _distributedCache = distributedCache;
         _endpointOptions = endpointOptions.Value;
         _httpClient = new HttpClient();
         _cacheSettings = cacheSettings.Value;
-        _querySettings = querySettings.Value;
     }
 
     public Task StartAsync(CancellationToken ct)
@@ -50,7 +47,7 @@ public class DataFetchingService : IHostedService, IDisposable
             var context = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
 
             // Build URI with query params
-            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri!)
+            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri)
             {
                 Path = new Uri(_endpointOptions.EndpointUri).AbsolutePath.TrimEnd('/') + "/query" // Ensure no trailing slash
             };
@@ -82,22 +79,28 @@ public class DataFetchingService : IHostedService, IDisposable
 
             if (storedHash != fetchedDataHash)
             {
-                // Save to database
-                context.DemographicsData.RemoveRange(context.DemographicsData); // Clear existing data
-                context.DemographicsData.AddRange(fetchedData);
-
-                // Update the stored hash
-                if (storedHash == null)
+                using (var tran = await context.Database.BeginTransactionAsync())
                 {
-                    context.DataHash.Add(new DataHash { Hash = fetchedDataHash });
+                    // Clear old
+                    context.DemographicsData.RemoveRange(context.DemographicsData);
+                    // Add new
+                    await context.DemographicsData.AddRangeAsync(fetchedData);
+                    
+                    // Update hash
+                    if (storedHash == null)
+                    {
+                        context.DataHash.Add(new DataHash { Hash = fetchedDataHash });
+                    }
+                    else
+                    {
+                        context.DataHash.First().Hash = fetchedDataHash;
+                    }
+                    
+                    // Save
+                    await context.SaveChangesAsync();
+                    await tran.CommitAsync();
                 }
-                else
-                {
-                    context.DataHash.First().Hash = fetchedDataHash;
-                }
-
-                await context.SaveChangesAsync();
-
+                
                 // Save to cache
                 string serializedData = JsonSerializer.Serialize(fetchedData);
                 byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
