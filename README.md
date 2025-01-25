@@ -59,16 +59,21 @@ This project is a .NET Core application that fetches demographic data from an ex
     dotnet restore
     ```
 
-3. Update the connection string in `appsettings.json`:
+3. Update the connection string to the database in `appsettings.json`:
     ```json
-    {
       "ConnectionStrings": {
         "DefaultConnection": "Connection string here"
       }
-    }
     ```
 
-4. (Optional) Apply database migrations manually (app will do it at startup):
+4. Update the connection string to the endpoint in `appsettings.json`:
+    ```json
+      "Endpoint": {
+        "EndpointUri": "Endpoint string here"
+      }
+    ```
+
+5. (Optional) Apply database migrations manually (app will do it at startup):
     ```shell
     dotnet ef database update --project DemographicsDb
     ```
