@@ -94,7 +94,7 @@ This project is a .NET Core application that fetches demographic data from an ex
 ### Endpoints
 
 - **GET `/api/DemographicData`**: 
-  - Returns all demographic data.
+  - Returns all demographic data (grouped by state name and population).
 
 - **GET `/api/DemographicData?stateName=value`**: 
   - Filters the results by the specified `stateName`.
