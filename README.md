@@ -85,7 +85,9 @@ This project is a .NET Core application that fetches demographic data from an ex
     dotnet run --project DemographicsWebApi
     ```
 
-2. The API will be available at `https://localhost:7067`.
+2. The API will be available at
+   - `https://localhost:7067`
+   - `http://localhost:5171`
 
 ## API Usage
 
