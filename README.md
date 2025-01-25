@@ -39,7 +39,7 @@ This project is a .NET Core application that fetches demographic data from an ex
 - **Distributed In-Memory Caching**: Used `IDistributedCache` to cache the fetched data.
 - **Configuration**: Used `IOptions` to access configuration settings from `appsettings.json`.
 - **Design-Time DbContext Creation**: Implemented `IDesignTimeDbContextFactory` to provide the `DbContext` with the necessary configuration at design time.
-- **Logging**: Used `Serilog` to log information, warnings, and errors.
+- **Logging**: Used `Serilog` to log information, warnings, and errors in `DemographicsWebApi\logs` folder.
 
 ## Getting Started
 
@@ -129,7 +129,7 @@ The solution includes a `Dockerfile` located in the solution root, allowing you 
     ```
    
 3. The API will be available at:
-   `http://localhost:8080`
+   - `http://localhost:8080`
 
 ## API Usage
 
