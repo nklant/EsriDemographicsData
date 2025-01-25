@@ -1,6 +1,6 @@
 # Demographics Data Fetching Service
 
-This project is a .NET Core application that fetches demographic data from an external API, processes it, and stores it in a SQL Server database. The application also caches the data periodically to improve performance. 
+This project is a .NET Core application that fetches demographic data from an external API, processes it, and stores it in a SQL Server database. The application also caches the data periodically to improve performance.
 
 ## Project Structure
 
@@ -38,6 +38,7 @@ This project is a .NET Core application that fetches demographic data from an ex
 - **Distributed In-Memory Caching**: Used `IDistributedCache` to cache the fetched data.
 - **Configuration**: Used `IOptions` to access configuration settings from `appsettings.json`.
 - **Design-Time DbContext Creation**: Implemented `IDesignTimeDbContextFactory` to provide the `DbContext` with the necessary configuration at design time.
+- **Logging**: Used `Serilog` to log information, warnings, and errors.
 
 ## Getting Started
 
@@ -78,6 +79,27 @@ This project is a .NET Core application that fetches demographic data from an ex
     dotnet ef database update --project DemographicsDb
     ```
 
+### Database Schema
+
+The application uses a SQL Server database to store demographic data. Below is a brief description of the schema:
+
+### Tables
+
+1. `DemographicsData`
+    - Stores demographic information grouped by state.
+    - Columns:
+        - `Id` (int, PK): Id for each field
+        - `StateName` (nvarchar(max), null): The name of the state
+        - `Population` (int, null): The population of the state
+
+2. `DataHash`
+    - Stores a hash of the fetched data to detect changes and avoid redundant updates.
+    - Columns:
+        - `Id` (int, PK): Id for each field
+        - `Hash` (nvarchar(max), not null): The hash value of the fetched data
+
+
+
 ### Running the Application
 
 1. Start the application:
@@ -86,21 +108,21 @@ This project is a .NET Core application that fetches demographic data from an ex
     ```
 
 2. The API will be available at
-   - `https://localhost:7067`
-   - `http://localhost:5171`
+    - `https://localhost:7067`
+    - `http://localhost:5171`
 
 ## API Usage
 
 ### Endpoints
 
-- **GET `/api/DemographicData`**: 
-  - Returns all demographic data (grouped by state name and population).
+- **GET `/api/DemographicData`**:
+    - Returns all demographic data (grouped by state name and population).
 
-- **GET `/api/DemographicData?stateName=value`**: 
-  - Filters the results by the specified `stateName`.
-  - Performs a case-insensitive search.
-  - Matches exact or partial occurrences of the given `stateName`.
-  - Example: `/api/DemographicData?stateName=new` will return all states with "new" (e.g., "New Mexico", ignoring case).
+- **GET `/api/DemographicData?stateName=value`**:
+    - Filters the results by the specified `stateName`.
+    - Performs a case-insensitive search.
+    - Matches exact or partial occurrences of the given `stateName`.
+    - Example: `/api/DemographicData?stateName=new` will return all states with "new" (e.g., "New Mexico", ignoring case).
 
 ### Swagger UI
 
