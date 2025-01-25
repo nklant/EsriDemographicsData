@@ -70,7 +70,7 @@ This project is a .NET Core application that fetches demographic data from an ex
 
 4. (Optional) Apply database migrations manually (app will do it at startup):
     ```shell
-    dotnet ef database update --project DemographicDb
+    dotnet ef database update --project DemographicsDb
     ```
 
 ### Running the Application
