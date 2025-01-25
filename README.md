@@ -155,7 +155,3 @@ The application uses `appsettings.json` for configuration. Key settings include:
 - **ConnectionStrings**: Database connection strings.
 - **Endpoint**: Configuration for the external API endpoint.
 - **CacheSettings**: Settings for the distributed cache (TTL, cacheKey).
-
-## Design-Time DbContext Creation
-
-The `DesignTimeDbContextFactory` class is used to provide the `DbContext` with the required configuration at design time. This is necessary for Entity Framework Core tools, such as migrations.

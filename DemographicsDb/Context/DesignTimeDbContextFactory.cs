@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace DemographicsDb.Context;
 
+/// <summary>
+/// Provides DbContext with the required configuration at design time
+/// </summary>
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<DemographicDbContext>
 {
     public DemographicDbContext CreateDbContext(string[] args)

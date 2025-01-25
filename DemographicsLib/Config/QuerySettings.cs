@@ -1,5 +1,8 @@
 namespace DemographicsLib.Config;
 
+/// <summary>
+/// Contains the query settings for the provided endpoint.
+/// </summary>
 public class QuerySettings
 {
     public const string Where = "1=1";
