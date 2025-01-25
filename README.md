@@ -129,7 +129,7 @@ The solution includes a `Dockerfile` located in the solution root, allowing you 
     ```
    
 3. The API will be available at:
-   `http://localhost:8080`
+   - `http://localhost:8080`
 
 ## API Usage
 
