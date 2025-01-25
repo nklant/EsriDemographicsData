@@ -17,6 +17,7 @@ This project is a .NET Core application that fetches demographic data from an ex
 - **Configuration**: Uses `appsettings.json` for configuration settings and strongly typed options classes for `EndpointOptions` and `CacheSettings`.
 - **Dependency Injection**: Utilizes DI for better modularity and testability, including services such as `DemographicDbContext`, `IDemographicDataService`, and others.
 - **Separation of concerns**: Isolates business logic and service interfaces (`IDemographicDataService`) from the Web API and the data access layer. This improves maintainability and testability by allowing each layer to focus on a specific responsibility. This approach lets changing or reusing the business logic in other contexts (e.g., a desktop app or another service) without dragging in all the web and database code.
+- **Docker Support**: The application can be containerized for easy deployment using Docker. The `Dockerfile` is located in the solution root.
 
 ## Design patterns used
 
@@ -110,6 +111,25 @@ The application uses a SQL Server database to store demographic data. Below is a
 2. The API will be available at
     - `https://localhost:7067`
     - `http://localhost:5171`
+
+### Running the application with Docker
+
+The solution includes a `Dockerfile` located in the solution root, allowing you to easily containerize the Web API project. The Dockerfile includes all necessary dependencies to run the application.
+
+### Building and running the container
+
+1. Build the Docker image (from solution root):
+    ```shell
+    docker build -t demographics-service .
+    ```
+   
+2. Run the Docker container:
+    ```shell
+    docker run -d -p 8080:80 --name demographics-container demographics-service
+    ```
+   
+3. The API will be available at:
+   `http://localhost:8080`
 
 ## API Usage
 
