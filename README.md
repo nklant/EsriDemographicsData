@@ -80,7 +80,24 @@ This project is a .NET Core application that fetches demographic data from an ex
     dotnet run --project DemographicsWebApi
     ```
 
-2. The API will be available at `https://localhost:5171`.
+2. The API will be available at `https://localhost:7067`.
+
+## API Usage
+
+### Endpoints
+
+- **GET `/api/DemographicData`**: 
+  - Returns all demographic data.
+
+- **GET `/api/DemographicData?stateName=value`**: 
+  - Filters the results by the specified `stateName`.
+  - Performs a case-insensitive search.
+  - Matches exact or partial occurrences of the given `stateName`.
+  - Example: `/api/DemographicData?stateName=cal` could return any states with "new" (e.g., "New Mexico", ignoring case).
+
+### Swagger UI
+
+In development mode, there is access to Swagger UI at `https://localhost:7067/swagger`, which provides an interactive interface to test and document the available endpoints.
 
 ## Configuration
 
@@ -88,7 +105,7 @@ The application uses `appsettings.json` for configuration. Key settings include:
 
 - **ConnectionStrings**: Database connection strings.
 - **Endpoint**: Configuration for the external API endpoint.
-- **CacheSettings**: Settings for the distributed cache.
+- **CacheSettings**: Settings for the distributed cache (TTL, cacheKey).
 
 ## Design-Time DbContext Creation
 
