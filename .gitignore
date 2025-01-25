@@ -1,0 +1,16 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/EsriDemographicsData
+/DemographicsBackgroundService/bin/Debug/net9.0
+/DemographicsBackgroundService/obj
+/DemographicsDb/bin/Debug/net9.0
+/DemographicsDb/obj/Debug/net9.0
+/DemographicsDb/obj
+/DemographicsLib/bin/Debug/net9.0
+/DemographicsLib/obj/Debug/net9.0
+/DemographicsLib/obj
+/DemographicsWebApi/bin/Debug/net9.0
+/DemographicsWebApi/obj
+*.user
