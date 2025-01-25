@@ -1,8 +1,5 @@
 # Demographics Data Service
 
-## Author
-- Nikolay Antonov
-
 This project is a .NET Core application that fetches demographic data from an external API, processes it, and stores it in a SQL Server database. The application also caches the data periodically to improve performance. It exposes a REST API, allowing clients to interact with the demographic data using the standard HTTP GET method.
 
 ## Project Structure
@@ -158,3 +155,6 @@ The application uses `appsettings.json` for configuration. Key settings include:
 - **ConnectionStrings**: Database connection strings.
 - **Endpoint**: Configuration for the external API endpoint.
 - **CacheSettings**: Settings for the distributed cache (TTL, cacheKey).
+
+## Author
+- Nikolay Antonov
