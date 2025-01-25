@@ -56,7 +56,7 @@ public class DataFetchingService : IHostedService, IDisposable
     {
         using (var scope = _serviceProvider.CreateScope())
         {
-            var context = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
+            var Db = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
 
             // Build URI with query params
             var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri)
@@ -87,30 +87,30 @@ public class DataFetchingService : IHostedService, IDisposable
             string fetchedDataHash = ComputeHash(fetchedData);
 
             // Retrieve the stored hash from the database
-            var storedHash = context.DataHash.FirstOrDefault()?.Hash;
+            var storedHash = Db.DataHash.Single()?.Hash;
 
             // Check to see if there is a difference between the stored data and the fetched data
             if (storedHash != fetchedDataHash)
             {
-                using (var tran = await context.Database.BeginTransactionAsync())
+                using (var tran = await Db.Database.BeginTransactionAsync())
                 {
                     // Clear old
-                    context.DemographicsData.RemoveRange(context.DemographicsData);
+                    Db.DemographicsData.RemoveRange(Db.DemographicsData);
                     // Add new
-                    await context.DemographicsData.AddRangeAsync(fetchedData);
+                    await Db.DemographicsData.AddRangeAsync(fetchedData);
                     
                     // Update hash
                     if (storedHash == null)
                     {
-                        context.DataHash.Add(new DataHash { Hash = fetchedDataHash });
+                        Db.DataHash.Add(new DataHash { Hash = fetchedDataHash });
                     }
                     else
                     {
-                        context.DataHash.First().Hash = fetchedDataHash;
+                        Db.DataHash.First().Hash = fetchedDataHash;
                     }
                     
                     // Save
-                    await context.SaveChangesAsync();
+                    await Db.SaveChangesAsync();
                     await tran.CommitAsync();
                 }
                 
