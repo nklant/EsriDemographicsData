@@ -9,10 +9,12 @@ namespace DemographicsWebApi.Controllers;
 public class DemographicDataController : ControllerBase
 {
     private readonly IDemographicDataService _service;
+    private readonly ILogger _log;
 
-    public DemographicDataController(IDemographicDataService service)
+    public DemographicDataController(IDemographicDataService service, ILogger<DemographicDataController> log)
     {
         _service = service;
+        _log = log;
     }
 
     [HttpGet]
@@ -25,6 +27,7 @@ public class DemographicDataController : ControllerBase
         }
         catch (Exception ex)
         {
+            _log.LogError(ex, "GetDataAsync");
             return StatusCode(500, ex.Message);
         }
     }

@@ -10,6 +10,7 @@ using System.Web;
 using DemographicsBackgroundService.Models;
 using DemographicsDb.Models;
 using DemographicsLib.Config;
+using Microsoft.Extensions.Logging;
 
 namespace DemographicsBackgroundService.Services;
 
@@ -21,22 +22,33 @@ public class DataFetchingService : IHostedService, IDisposable
     private Timer? _timer;
     private readonly HttpClient _httpClient;
     private readonly CacheSettings _cacheSettings;
+    private readonly ILogger<DataFetchingService> _log;
 
     public DataFetchingService(IServiceProvider serviceProvider, 
                                IDistributedCache distributedCache, 
                                IOptions<EndpointOptions> endpointOptions,
-                               IOptions<CacheSettings> cacheSettings)
+                               IOptions<CacheSettings> cacheSettings,
+                               ILogger<DataFetchingService> log)
     {
         _serviceProvider = serviceProvider;
         _distributedCache = distributedCache;
         _endpointOptions = endpointOptions.Value;
         _httpClient = new HttpClient();
         _cacheSettings = cacheSettings.Value;
+        _log = log;
     }
 
     public Task StartAsync(CancellationToken ct)
     {
-        _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
+        try
+        {
+            _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "StartAsync.FetchDataAndCache");
+        }
+        
         return Task.CompletedTask;
     }
 

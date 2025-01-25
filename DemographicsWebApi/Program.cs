@@ -5,11 +5,25 @@ using DemographicsLib.Config;
 using DemographicsLib.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<DemographicDbContext>(options => options.UseSqlServer(connectionString));
+
+var serilog = new LoggerConfiguration()
+    .MinimumLevel.Verbose()
+    .WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
+    .WriteTo.File("logs/Info-.txt", rollingInterval: RollingInterval.Day))
+    .WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning)
+    .WriteTo.File("logs/Warning-.txt", rollingInterval: RollingInterval.Day))
+    .WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error)
+    .WriteTo.File("logs/Error-.txt", rollingInterval: RollingInterval.Day))
+    .CreateLogger();
+
+builder.Logging.AddSerilog(serilog);
 
 builder.Services.AddControllers();
 
