@@ -87,7 +87,7 @@ public class DataFetchingService : IHostedService, IDisposable
             string fetchedDataHash = ComputeHash(fetchedData);
 
             // Retrieve the stored hash from the database
-            var storedHash = Db.DataHash.Single()?.Hash;
+            var storedHash = Db.DataHash.SingleOrDefault()?.Hash;
 
             // Check to see if there is a difference between the stored data and the fetched data
             if (storedHash != fetchedDataHash)
