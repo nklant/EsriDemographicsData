@@ -93,7 +93,7 @@ This project is a .NET Core application that fetches demographic data from an ex
   - Filters the results by the specified `stateName`.
   - Performs a case-insensitive search.
   - Matches exact or partial occurrences of the given `stateName`.
-  - Example: `/api/DemographicData?stateName=cal` could return any states with "new" (e.g., "New Mexico", ignoring case).
+  - Example: `/api/DemographicData?stateName=new` could return any states with "new" (e.g., "New Mexico", ignoring case).
 
 ### Swagger UI
 
