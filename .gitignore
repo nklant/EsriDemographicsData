@@ -14,3 +14,4 @@
 /DemographicsWebApi/bin/Debug/net9.0
 /DemographicsWebApi/obj
 *.user
+/DemographicsWebApi/logs
