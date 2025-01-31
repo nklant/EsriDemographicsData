@@ -42,7 +42,7 @@ public class DataFetchingService : IHostedService, IDisposable
     {
         try
         {
-            _timer = new Timer(FetchDataAndCache, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
+            _timer = new Timer(FetchAndCacheAsync, null, TimeSpan.Zero, TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins));
         }
         catch (Exception ex)
         {
@@ -52,80 +52,126 @@ public class DataFetchingService : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
-    private async void FetchDataAndCache(object? state)
+    private async void FetchAndCacheAsync(object? state)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        using var scope = _serviceProvider.CreateScope();
+        var Db = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
+    
+        int maxRecordCount = await GetMaxRecordCountAsync();
+    
+        var allData = await FetchAllFeaturesAsync(maxRecordCount);
+    
+        var processedData = ProcessFetchedData(allData);
+    
+        bool isUpdated = await UpdateDbAsync(Db, processedData);
+    
+        if (isUpdated)
         {
-            var Db = scope.ServiceProvider.GetRequiredService<DemographicDbContext>();
-
-            // Build URI with query params
-            var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri)
-            {
-                Path = new Uri(_endpointOptions.EndpointUri).AbsolutePath.TrimEnd('/') + "/query" // Ensure no trailing slash
-            };
-            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-            query["where"] = QuerySettings.Where;
-            query["outFields"] = QuerySettings.OutFields;
-            query["returnGeometry"] = QuerySettings.ReturnGeometry;
-            query["f"] = QuerySettings.F;
-            uriBuilder.Query = query.ToString();
-            
-            var response = await _httpClient.GetStringAsync(uriBuilder.Uri);
-            using var jsonData = JsonDocument.Parse(response); // Because disposable
-            
-            // Aggregate by STATE_NAME
-            var data = JsonSerializer.Deserialize<FeatureCollection>(response);
-            var fetchedData = data?.Features?
-                .GroupBy(f => f.Attributes?.StateName)
-                .Select(g => new DemographicsData
-                {
-                    StateName = g.Key ?? "Unknown",
-                    Population = g.Sum(x => x.Attributes?.Population ?? 0)
-                }).ToList() ?? new List<DemographicsData>();
-
-            // Compute hash of the fetched data
-            string fetchedDataHash = ComputeHash(fetchedData);
-
-            // Retrieve the stored hash from the database
-            var storedHash = Db.DataHash.SingleOrDefault()?.Hash;
-
-            // Check to see if there is a difference between the stored data and the fetched data
-            if (storedHash != fetchedDataHash)
-            {
-                using (var tran = await Db.Database.BeginTransactionAsync())
-                {
-                    // Clear old
-                    Db.DemographicsData.RemoveRange(Db.DemographicsData);
-                    // Add new
-                    await Db.DemographicsData.AddRangeAsync(fetchedData);
-                    
-                    // Update hash
-                    if (storedHash == null)
-                    {
-                        Db.DataHash.Add(new DataHash { Hash = fetchedDataHash });
-                    }
-                    else
-                    {
-                        Db.DataHash.First().Hash = fetchedDataHash;
-                    }
-                    
-                    // Save
-                    await Db.SaveChangesAsync();
-                    await tran.CommitAsync();
-                }
-                
-                // Save to cache
-                string serializedData = JsonSerializer.Serialize(fetchedData);
-                byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
-
-                var cacheEntryOptions = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
-                };
-
-                await _distributedCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions);
-            }
+            await UpdateCacheAsync(processedData);
         }
+    }
+
+    private async Task<int> GetMaxRecordCountAsync()
+    {
+        var response = await _httpClient.GetStringAsync(_endpointOptions.EndpointUri + "?f=json");
+        using var jsonDocument = JsonDocument.Parse(response);
+
+        return jsonDocument.RootElement.TryGetProperty("maxRecordCount", out var element) ? element.GetInt32() : 1000;
+    }
+    
+    private List<DemographicsData> ProcessFetchedData(List<Feature> features)
+    {
+        return features?
+            .GroupBy(f => f.Attributes?.StateName)
+            .Select(g => new DemographicsData
+            {
+                StateName = g.Key ?? "Unknown",
+                Population = g.Sum(x => x.Attributes?.Population ?? 0)
+            }).ToList() ?? new();
+    }
+    
+    private async Task<List<Feature>> FetchAllFeaturesAsync(int maxRecordCount)
+    {
+        var features = new List<Feature>();
+        int offset = 0;
+
+        var uriBuilder = new UriBuilder(_endpointOptions.EndpointUri)
+        {
+            Path = new Uri(_endpointOptions.EndpointUri).AbsolutePath.TrimEnd('/') + "/query"
+        };
+        var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+        query["where"] = QuerySettings.Where;
+        query["outFields"] = QuerySettings.OutFields;
+        query["returnGeometry"] = QuerySettings.ReturnGeometry;
+        query["f"] = QuerySettings.F;
+
+        while (true)
+        {
+            query["resultOffset"] = offset.ToString();
+            query["resultRecordCount"] = maxRecordCount.ToString();
+            uriBuilder.Query = query.ToString();
+
+            var response = await _httpClient.GetStringAsync(uriBuilder.Uri);
+            var jsonData = JsonSerializer.Deserialize<FeatureCollection>(response);
+
+            if (jsonData?.Features != null)
+            {
+                features.AddRange(jsonData.Features);
+            }
+
+            int recordCount = jsonData?.Features?.Count ?? 0;
+            if (recordCount < maxRecordCount)
+            {
+                break;
+            }
+
+            offset += maxRecordCount;
+        }
+
+        return features;
+    }
+    
+    private async Task<bool> UpdateDbAsync(DemographicDbContext Db, List<DemographicsData> fetchedData)
+    {
+        string fetchedDataHash = ComputeHash(fetchedData);
+        string? storedHash = Db.DataHash.SingleOrDefault()?.Hash;
+
+        if (storedHash == fetchedDataHash)
+        {
+            return false; // No change
+        }
+
+        await using var tran = await Db.Database.BeginTransactionAsync();
+    
+        Db.DemographicsData.RemoveRange(Db.DemographicsData);
+        await Db.DemographicsData.AddRangeAsync(fetchedData);
+
+        if (storedHash == null)
+        {
+            Db.DataHash.Add(new DataHash { Hash = fetchedDataHash });
+        }
+        else
+        {
+            Db.DataHash.First().Hash = fetchedDataHash;
+        }
+
+        await Db.SaveChangesAsync();
+        await tran.CommitAsync();
+
+        return true; // Updated
+    }
+
+    private async Task UpdateCacheAsync(List<DemographicsData> fetchedData)
+    {
+        string serializedData = JsonSerializer.Serialize(fetchedData);
+        byte[] dataToCache = Encoding.UTF8.GetBytes(serializedData);
+
+        var cacheEntryOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.CacheTTLMins)
+        };
+
+        await _distributedCache.SetAsync(_cacheSettings.CacheKey, dataToCache, cacheEntryOptions);
     }
 
     private string ComputeHash(List<DemographicsData> data)
